@@ -2,7 +2,6 @@
 """Script that distributes an archive to web_servers, using do_deploy
 """
 from fabric.api import local, env, run, put, sudo
-from datetime import datetime
 from fabric import operations
 
 env.hosts = ['44.210.150.159', '35.173.47.15']
