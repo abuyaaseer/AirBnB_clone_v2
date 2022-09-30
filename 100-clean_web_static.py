@@ -1,72 +1,22 @@
 #!/usr/bin/python3
-"""Create and distributes an archive to web servers
-"""
-import os.path
-import time
-from fabric.api import local
-from fabric.operations import env, put, run
-
-env.hosts = ['34.75.39.5', '34.74.147.195']
+""" Function that deploys """
+from fabric.api import *
 
 
-def do_pack():
-    """Generate an tgz archive from web_static folder."""
-    try:
-        local("mkdir -p versions")
-        local("tar -cvzf versions/web_static_{}.tgz web_static/".
-              format(time.strftime("%Y%m%d%H%M%S")))
-        return ("versions/web_static_{}.tgz".format(time.
-                                                    strftime("%Y%m%d%H%M%S")))
-    except:
-        return None
-
-
-def do_deploy(archive_path):
-    """Distribute an archive to web servers."""
-    if (os.path.isfile(archive_path) is False):
-        return False
-
-    try:
-        file = archive_path.split("/")[-1]
-        folder = ("/data/web_static/releases/" + file.split(".")[0])
-        put(archive_path, "/tmp/")
-        run("mkdir -p {}".format(folder))
-        run("tar -xzf /tmp/{} -C {}".format(file, folder))
-        run("rm /tmp/{}".format(file))
-        run("mv {}/web_static/* {}/".format(folder, folder))
-        run("rm -rf {}/web_static".format(folder))
-        run('rm -rf /data/web_static/current')
-        run("ln -s {} /data/web_static/current".format(folder))
-        print("Deployment done")
-        return True
-    except:
-        return False
-
-
-def deploy():
-    """Create and distributes an archive to web servers."""
-    try:
-        path = do_pack()
-        return do_deploy(path)
-    except:
-        return False
+env.hosts = ['35.231.33.237', '34.74.155.163']
+env.user = "ubuntu"
 
 
 def do_clean(number=0):
-    """Delete out-of-date archives.
+    """ CLEANS """
 
-    Args:
-        number (int, optional): Number of archives to keep.
-    """
-    number = 1 if int(number) == 0 else int(number)
+    number = int(number)
 
-    archives = sorted(os.listdir("versions"))
-    [archives.pop() for i in range(number)]
-    with lcd("versions"):
-        [local("rm ./{}".format(a)) for a in archives]
+    if number == 0:
+        number = 2
+    else:
+        number += 1
 
-    with cd("/data/web_static/releases"):
-        archives = run("ls -tr").split()
-        archives = [a for a in archives if "web_static_" in a]
-        [archives.pop() for i in range(number)]
-        [run("rm -rf ./{}".format(a)) for a in archives]
+    local('cd versions ; ls -t | tail -n +{} | xargs rm -rf'.format(number))
+    path = '/data/web_static/releases'
+    run('cd {} ; ls -t | tail -n +{} | xargs rm -rf'.format(path, number))
