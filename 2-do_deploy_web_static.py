@@ -1,42 +1,63 @@
 #!/usr/bin/python3
-"""Script that distributes an archive to web_servers, using do_deploy
+"""Generates a .tgz archive from the contents of
+the web_static folder of the AirBnB Clone repo
+and distributes an archive to a web server.
 """
-from fabric.api import local, env, run, put, sudo
-from fabric import operations
+
+from fabric.operations import local, run, put
+from datetime import datetime
+import os
+from fabric.api import env
+
 
 env.hosts = ['44.210.150.159', '35.173.47.15']
+env.user = "ubuntu"
+
+
+def do_pack():
+    """Function to compress files to .tgz"""
+    local("mkdir -p versions")
+    arch = local("tar -cvzf versions/web_static_{}.tgz web_static"
+                 .format(datetime.strftime(datetime.now(), "%Y%m%d%H%M%S")),
+                 capture=True)
+    if arch.succeeded:
+        return arch
+    return None
 
 
 def do_deploy(archive_path):
-    """Function that deploys archive to web_servers"""
-    if archive_path:
-        archive_file = archive_path.split("/")[1]
-        archive_dir = archive_file.split(".")[0]
-        releases = '/data/web_static/releases/'
-        current = '/data/web_static/current'
+    """Function to distribute an archive to a server"""
+    if not os.path.exists(archive_path):
+        return False
 
-        try:
-            # upload the archive to /tmp/
-            put(archive_path, '/tmp/')
-            # make dir /data/web_static/releases/archive_filename_bar_ext
-            # and uncompress the archive
-            run('mkdir -p {}{}'.format(releases, archive_dir))
-            run('tar -xzf /tmp/{} -C {}{}'.format(
-                archive_file, releases, archive_dir))
-            # delete the archive from web_server
-            run('rm /tmp/{}'.format(archive_file))
+    try:
+        # web_static_20220929115037.tgz
+        arch_name = archive_path.split("/")[1]
+        # web_static_20220929115037
+        file_name = arch_name.split(".")[0]
 
-            run('mv {}{}/web_static/* {}{}'.format(
-                releases, archive_dir, releases, archive_dir))
-            run('rm -rf {}{}/web_static'.format(releases, archive_dir))
-            # delete the old symoblic link
-            run('rm -rf {}'.format(current))
-            # create the new symbolic link
-            run('ln -s {}{} {}'.format(releases, archive_dir, current))
+        # upload archive to /tmp/
+        put(archive_path, "/tmp/{}".format(arch_name))
 
-            return True
-        except:
-            return False
+        # uncompress the archive to /data/web_static/releases/file_name
+        run("mkdir -p /data/web_static/releases/{}".format(file_name))
+        run("tar -xzf /tmp/{} -C /data/web_static/releases/{}/"
+            .format(arch_name, file_name))
 
-    else:
+        # delete the archive from the web server
+        run("rm /tmp/{}".format(arch_name))
+
+        # delete the symbolic link /data/web_static/current
+        run("mv /data/web_static/releases/{}/web_static/*"
+            " /data/web_static/releases/{}/".format(file_name, file_name))
+        run("rm -rf /data/web_static/releases/{}/web_static".format(file_name))
+        run("rm -rf /data/web_static/current")
+
+        # create a new symbolic link /data/web_static/current
+        run("ln -s /data/web_static/releases/{}/ /data/web_static/current"
+            .format(file_name))
+
+        print("New version deployed!")
+        return True
+    except Exception:
         return False
