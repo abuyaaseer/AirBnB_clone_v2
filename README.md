@@ -19,6 +19,7 @@ This repository contains the initial stage of a student project to build a clone
 | 8. Create User class | [console.py](./console.py) [/models/engine/file_storage.py](./models/engine/file_storage.py) [/models/user.py](./models/user.py) | Dynamically implements a user class |
 | 9. More Classes | [/models/user.py](./models/user.py) [/models/place.py](./models/place.py) [/models/city.py](./models/city.py) [/models/amenity.py](./models/amenity.py) [/models/state.py](./models/state.py) [/models/review.py](./models/review.py) | Dynamically implements more classes |
 | 10. Console 1.0 | [console.py](./console.py) [/models/engine/file_storage.py](./models/engine/file_storage.py) | Update the console and file storage system to work dynamically with all  classes update file storage |
+
 <br>
 <br>
 <center> <h2>General Use</h2> </center>
